@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentinelAI Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .provider-card { transition: all 0.3s ease; }
+        .provider-card:hover { transform: translateY(-2px); }
+        .healthy { border-left: 4px solid #10b981; }
+        .unhealthy { border-left: 4px solid #ef4444; }
+        .pulse { animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                        🛡️ SentinelAI
+                    </h1>
+                    <p class="text-gray-400 mt-1">Self-Healing AI Orchestrator Dashboard</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div id="system-status" class="px-4 py-2 rounded-full bg-green-900 text-green-400 font-semibold">
+                        System Healthy
+                    </div>
+                    <button onclick="refreshData()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition">
+                        🔄 Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Metrics Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-gray-800 rounded-xl p-6 provider-card">
+                <div class="text-gray-400 text-sm">Total Providers</div>
+                <div id="total-providers" class="text-3xl font-bold mt-2">4</div>
+            </div>
+            <div class="bg-gray-800 rounded-xl p-6 provider-card">
+                <div class="text-gray-400 text-sm">Healthy Providers</div>
+                <div id="healthy-providers" class="text-3xl font-bold mt-2 text-green-400">4</div>
+            </div>
+            <div class="bg-gray-800 rounded-xl p-6 provider-card">
+                <div class="text-gray-400 text-sm">Avg Latency</div>
+                <div id="avg-latency" class="text-3xl font-bold mt-2">0ms</div>
+            </div>
+            <div class="bg-gray-800 rounded-xl p-6 provider-card">
+                <div class="text-gray-400 text-sm">System Status</div>
+                <div id="system-status-text" class="text-3xl font-bold mt-2 text-green-400">Online</div>
+            </div>
+        </div>
+
+        <!-- Provider Status Grid -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-4">📊 Provider Health Status</h2>
+            <div id="providers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Provider cards will be inserted here -->
+            </div>
+        </div>
+
+        <!-- Demo Controls -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-4">🧪 Failure Simulator (Demo Mode)</h2>
+            <div class="bg-gray-800 rounded-xl p-6">
+                <p class="text-gray-400 mb-4">Simulate provider failures to test automatic failover:</p>
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="simulateFailure('openai')" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition">
+                        🔴 Simulate OpenAI Outage
+                    </button>
+                    <button onclick="simulateFailure('anthropic')" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition">
+                        🔴 Simulate Claude Outage
+                    </button>
+                    <button onclick="simulateFailure('grok')" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition">
+                        🔴 Simulate Grok Outage
+                    </button>
+                    <button onclick="resetSimulation()" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition">
+                        ✅ Reset All Providers
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Chat Test -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-4">💬 Test Chat Endpoint</h2>
+            <div class="bg-gray-800 rounded-xl p-6">
+                <div class="mb-4">
+                    <label class="block text-gray-400 mb-2">Message</label>
+                    <input type="text" id="chat-message" value="Hello, test the failover system!" 
+                           class="w-full px-4 py-2 bg-gray-700 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-400 mb-2">Routing Strategy</label>
+                    <select id="chat-strategy" class="w-full px-4 py-2 bg-gray-700 rounded-lg border border-gray-600">
+                        <option value="balanced">Balanced (Default)</option>
+                        <option value="fastest">Fastest</option>
+                        <option value="most_reliable">Most Reliable</option>
+                        <option value="cheapest">Cheapest</option>
+                    </select>
+                </div>
+                <button onclick="sendChat()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition font-semibold">
+                    🚀 Send Message
+                </button>
+                
+                <div id="chat-response" class="mt-6 p-4 bg-gray-900 rounded-lg hidden">
+                    <h3 class="font-bold mb-2">Response:</h3>
+                    <pre id="chat-response-content" class="text-sm text-gray-300 overflow-auto"></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Latency Chart -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-4">📈 Provider Latency Comparison</h2>
+            <div class="bg-gray-800 rounded-xl p-6">
+                <canvas id="latency-chart" height="80"></canvas>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 border-t border-gray-700 mt-12">
+        <div class="max-w-7xl mx-auto px-4 py-6 text-center text-gray-400">
+            <p>Built for AI Builders Hackathon 2026 | SentinelAI v1.0</p>
+        </div>
+    </footer>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let latencyChart = null;
+
+        async function fetchMetrics() {
+            try {
+                const response = await fetch(`${API_BASE}/api/metrics`);
+                const data = await response.json();
+                updateDashboard(data);
+            } catch (error) {
+                console.error('Error fetching metrics:', error);
+            }
+        }
+
+        function updateDashboard(data) {
+            // Update summary metrics
+            document.getElementById('total-providers').textContent = data.summary.total_providers;
+            document.getElementById('healthy-providers').textContent = data.summary.healthy_providers;
+            document.getElementById('avg-latency').textContent = `${Math.round(data.summary.average_latency_ms)}ms`;
+            
+            const statusText = document.getElementById('system-status-text');
+            const statusBadge = document.getElementById('system-status');
+            
+            if (data.summary.system_status === 'healthy') {
+                statusText.textContent = 'Online';
+                statusText.className = 'text-3xl font-bold mt-2 text-green-400';
+                statusBadge.className = 'px-4 py-2 rounded-full bg-green-900 text-green-400 font-semibold';
+                statusBadge.textContent = 'System Healthy';
+            } else {
+                statusText.textContent = 'Degraded';
+                statusText.className = 'text-3xl font-bold mt-2 text-red-400';
+                statusBadge.className = 'px-4 py-2 rounded-full bg-red-900 text-red-400 font-semibold pulse';
+                statusBadge.textContent = 'System Degraded';
+            }
+
+            // Update provider cards
+            const providersGrid = document.getElementById('providers-grid');
+            providersGrid.innerHTML = '';
+            
+            Object.entries(data.providers).forEach(([name, info]) => {
+                const card = document.createElement('div');
+                card.className = `bg-gray-800 rounded-xl p-6 provider-card ${info.healthy ? 'healthy' : 'unhealthy'}`;
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold capitalize">${name}</h3>
+                        <span class="px-2 py-1 rounded text-xs font-semibold ${info.healthy ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}">
+                            ${info.healthy ? '✓ Healthy' : '✗ Down'}
+                        </span>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Latency:</span>
+                            <span class="font-mono">${info.latency_ms}ms</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Success Rate:</span>
+                            <span class="font-mono">${info.success_rate}%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Failures:</span>
+                            <span class="font-mono">${info.consecutive_failures}</span>
+                        </div>
+                    </div>
+                `;
+                providersGrid.appendChild(card);
+            });
+
+            // Update chart
+            updateChart(data.providers);
+        }
+
+        function updateChart(providers) {
+            const ctx = document.getElementById('latency-chart').getContext('2d');
+            const labels = Object.keys(providers);
+            const latencies = Object.values(providers).map(p => p.latency_ms);
+            const colors = Object.values(providers).map(p => p.healthy ? '#10b981' : '#ef4444');
+
+            if (latencyChart) {
+                latencyChart.destroy();
+            }
+
+            latencyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
+                    datasets: [{
+                        label: 'Latency (ms)',
+                        data: latencies,
+                        backgroundColor: colors,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#374151' },
+                            ticks: { color: '#9ca3af' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#9ca3af' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        async function simulateFailure(provider) {
+            try {
+                const response = await fetch(`${API_BASE}/api/simulate-failure?provider_name=${provider}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                alert(`✅ ${data.message}`);
+                await fetchMetrics();
+            } catch (error) {
+                alert('❌ Error simulating failure: ' + error.message);
+            }
+        }
+
+        async function resetSimulation() {
+            try {
+                const response = await fetch(`${API_BASE}/api/reset-simulation`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                alert(`✅ ${data.message}`);
+                await fetchMetrics();
+            } catch (error) {
+                alert('❌ Error resetting: ' + error.message);
+            }
+        }
+
+        async function sendChat() {
+            const message = document.getElementById('chat-message').value;
+            const strategy = document.getElementById('chat-strategy').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        strategy: strategy
+                    })
+                });
+                
+                const data = await response.json();
+                
+                document.getElementById('chat-response').classList.remove('hidden');
+                document.getElementById('chat-response-content').textContent = JSON.stringify(data, null, 2);
+                
+                // Refresh metrics after chat
+                await fetchMetrics();
+            } catch (error) {
+                alert('❌ Error sending message: ' + error.message);
+            }
+        }
+
+        function refreshData() {
+            fetchMetrics();
+        }
+
+        // Initial load and auto-refresh every 5 seconds
+        fetchMetrics();
+        setInterval(fetchMetrics, 5000);
+    </script>
+</body>
+</html>
