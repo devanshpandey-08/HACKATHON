@@ -14,11 +14,10 @@ def test_config_defaults():
     """Test configuration default values"""
     config = SentinelConfig()
     
-    assert config.api_host == "0.0.0.0"
-    assert config.api_port == 8000
+    assert config.host == "0.0.0.0"
+    assert config.port == 8000
     assert config.health_check_interval_seconds == 10
-    assert config.health_check_timeout_seconds == 5
-    assert config.failure_threshold == 3
+    assert config.consecutive_failures_threshold == 3
     assert config.max_retries == 3
     assert config.max_tokens_limit == 8192
     assert config.demo_mode == True

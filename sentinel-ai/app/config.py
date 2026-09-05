@@ -163,14 +163,48 @@ class SentinelConfig:
         
         # If no providers configured, add mock providers for testing
         if not providers:
-            providers["mock_provider"] = ProviderConfig(
-                name="MockProvider",
-                api_key_env="",
-                base_url="http://localhost:9999",
-                models=["mock-model"],
-                cost_per_1k_tokens=0.001,
-                avg_latency_ms=100,
-                reliability_score=0.99,
+            # Add all major providers with mock keys for demo/development
+            providers["openai"] = ProviderConfig(
+                name="OpenAI",
+                api_key_env="OPENAI_API_KEY",
+                base_url="https://api.openai.com/v1",
+                models=["gpt-4o", "gpt-4o-mini"],
+                cost_per_1k_tokens=0.015,
+                avg_latency_ms=800,
+                reliability_score=0.98,
+                max_requests_per_minute=500,
+                enabled=True
+            )
+            providers["anthropic"] = ProviderConfig(
+                name="Anthropic",
+                api_key_env="ANTHROPIC_API_KEY",
+                base_url="https://api.anthropic.com/v1",
+                models=["claude-sonnet-4-20260514", "claude-opus-4-20260514"],
+                cost_per_1k_tokens=0.015,
+                avg_latency_ms=900,
+                reliability_score=0.97,
+                max_requests_per_minute=400,
+                enabled=True
+            )
+            providers["google"] = ProviderConfig(
+                name="Google",
+                api_key_env="GOOGLE_API_KEY",
+                base_url="https://generativelanguage.googleapis.com/v1beta",
+                models=["gemini-2.5-pro", "gemini-2.5-flash"],
+                cost_per_1k_tokens=0.0075,
+                avg_latency_ms=700,
+                reliability_score=0.96,
+                max_requests_per_minute=600,
+                enabled=True
+            )
+            providers["groq"] = ProviderConfig(
+                name="Groq",
+                api_key_env="GROQ_API_KEY",
+                base_url="https://api.groq.com/openai/v1",
+                models=["llama-3.3-70b-versatile", "mixtral-8x7b-32768"],
+                cost_per_1k_tokens=0.0007,
+                avg_latency_ms=200,
+                reliability_score=0.95,
                 max_requests_per_minute=1000,
                 enabled=True
             )
